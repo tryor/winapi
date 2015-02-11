@@ -9,6 +9,7 @@ var (
 	procGetDC      = moduser32.NewProc("GetDC")
 	procBeginPaint = moduser32.NewProc("BeginPaint")
 	procEndPaint   = moduser32.NewProc("EndPaint")
+	procReleaseDC  = moduser32.NewProc("ReleaseDC")
 
 	procRegisterClassExW = moduser32.NewProc("RegisterClassExW")
 	procCreateWindowExW  = moduser32.NewProc("CreateWindowExW")
@@ -34,6 +35,12 @@ func GetDC(hwnd HANDLE) (hdc HDC) {
 	r0, _, _ := syscall.Syscall(procGetDC.Addr(), 1, uintptr(hwnd), 0, 0)
 	hdc = HDC(r0)
 	return hdc
+}
+
+func ReleaseDC(h HANDLE, hdc HDC) bool {
+	var ret uintptr
+	ret, _, _ = procReleaseDC.Call(uintptr(h), uintptr(hdc))
+	return ret == 1
 }
 
 func BeginPaint(hwnd HANDLE, ps *PAINTSTRUCT) (hdc HDC) {
