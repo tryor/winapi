@@ -1,60 +1,75 @@
 package winapi
 
-import "unsafe"
-import "syscall"
+import (
+	"syscall"
+	"unicode/utf16"
+	"unsafe"
+)
 
 var (
 	moduser32 = syscall.NewLazyDLL("user32.dll")
 
-	procGetDC      = moduser32.NewProc("GetDC")
-	procBeginPaint = moduser32.NewProc("BeginPaint")
-	procEndPaint   = moduser32.NewProc("EndPaint")
-	procReleaseDC  = moduser32.NewProc("ReleaseDC")
-
-	procRegisterClassExW = moduser32.NewProc("RegisterClassExW")
-	procCreateWindowExW  = moduser32.NewProc("CreateWindowExW")
-	procDefWindowProcW   = moduser32.NewProc("DefWindowProcW")
-	procDestroyWindow    = moduser32.NewProc("DestroyWindow")
-	procPostQuitMessage  = moduser32.NewProc("PostQuitMessage")
-	procShowWindow       = moduser32.NewProc("ShowWindow")
-	procUpdateWindow     = moduser32.NewProc("UpdateWindow")
-	procGetMessageW      = moduser32.NewProc("GetMessageW")
-	procTranslateMessage = moduser32.NewProc("TranslateMessage")
-	procDispatchMessageW = moduser32.NewProc("DispatchMessageW")
-	procLoadIconW        = moduser32.NewProc("LoadIconW")
-	procLoadCursorW      = moduser32.NewProc("LoadCursorW")
 	procSetCursor        = moduser32.NewProc("SetCursor")
-	procSendMessageW     = moduser32.NewProc("SendMessageW")
-	procPostMessageW     = moduser32.NewProc("PostMessageW")
-
 	procGetKeyboardState = moduser32.NewProc("GetKeyboardState")
 	procSetFocus         = moduser32.NewProc("SetFocus")
+
+	procBeginPaint          = moduser32.NewProc("BeginPaint")
+	procCreateDialogParamW  = moduser32.NewProc("CreateDialogParamW")
+	procCreateWindowExW     = moduser32.NewProc("CreateWindowExW")
+	procDefWindowProcW      = moduser32.NewProc("DefWindowProcW")
+	procDestroyWindow       = moduser32.NewProc("DestroyWindow")
+	procDialogBoxParamW     = moduser32.NewProc("DialogBoxParamW")
+	procDispatchMessageW    = moduser32.NewProc("DispatchMessageW")
+	procEndDialog           = moduser32.NewProc("EndDialog")
+	procEndPaint            = moduser32.NewProc("EndPaint")
+	procGetDC               = moduser32.NewProc("GetDC")
+	procGetDlgItem          = moduser32.NewProc("GetDlgItem")
+	procGetMessageW         = moduser32.NewProc("GetMessageW")
+	procGetWindowLongW      = moduser32.NewProc("GetWindowLongW")
+	procGetWindowLongPtrW   = moduser32.NewProc("GetWindowLongPtrW")
+	procLoadCursorW         = moduser32.NewProc("LoadCursorW")
+	procLoadIconW           = moduser32.NewProc("LoadIconW")
+	procLoadMenuW           = moduser32.NewProc("LoadMenuW")
+	procLoadStringW         = moduser32.NewProc("LoadStringW")
+	procMessageBoxW         = moduser32.NewProc("MessageBoxW")
+	procUnregisterClassW    = moduser32.NewProc("UnregisterClassW")
+	procPostMessageW        = moduser32.NewProc("PostMessageW")
+	procPostQuitMessage     = moduser32.NewProc("PostQuitMessage")
+	procRegisterClassExW    = moduser32.NewProc("RegisterClassExW")
+	procReleaseDC           = moduser32.NewProc("ReleaseDC")
+	procSendMessageW        = moduser32.NewProc("SendMessageW")
+	procSendDlgItemMessageW = moduser32.NewProc("SendDlgItemMessageW")
+	procSetMenu             = moduser32.NewProc("SetMenu")
+	procSetWindowLongW      = moduser32.NewProc("SetWindowLongW")
+	procSetWindowLongPtrW   = moduser32.NewProc("SetWindowLongPtrW")
+	procShowWindow          = moduser32.NewProc("ShowWindow")
+	procTranslateMessage    = moduser32.NewProc("TranslateMessage")
+	procUpdateWindow        = moduser32.NewProc("UpdateWindow")
 )
 
-func GetDC(hwnd HANDLE) (hdc HDC) {
-	r0, _, _ := syscall.Syscall(procGetDC.Addr(), 1, uintptr(hwnd), 0, 0)
-	hdc = HDC(r0)
-	return hdc
-}
-
-func ReleaseDC(h HANDLE, hdc HDC) bool {
-	var ret uintptr
-	ret, _, _ = procReleaseDC.Call(uintptr(h), uintptr(hdc))
-	return ret == 1
-}
-
-func BeginPaint(hwnd HANDLE, ps *PAINTSTRUCT) (hdc HDC) {
-	r0, _, _ := syscall.Syscall(procBeginPaint.Addr(), 2, uintptr(hwnd), uintptr(unsafe.Pointer(ps)), 0)
+func GetDC(hwnd HWND) (hdc HDC) {
+	r0, _ := Syscall(procGetDC.Addr(), uintptr(hwnd))
 	hdc = HDC(r0)
 	return
 }
 
-func EndPaint(hwnd HANDLE, ps *PAINTSTRUCT) bool {
-	syscall.Syscall(procEndPaint.Addr(), 2, uintptr(hwnd), uintptr(unsafe.Pointer(ps)), 0)
-	return true
+func ReleaseDC(h HWND, hdc HDC) bool {
+	r0, _, _ := procReleaseDC.Call(uintptr(h), uintptr(hdc))
+	return r0 == 1
 }
 
-func RegisterClassEx(wndclass *Wndclassex) (atom uint16, err error) {
+func BeginPaint(hwnd HWND, ps *PAINTSTRUCT) (hdc HDC) {
+	r0, _ := Syscall(procBeginPaint.Addr(), uintptr(hwnd), uintptr(unsafe.Pointer(ps)))
+	hdc = HDC(r0)
+	return
+}
+
+func EndPaint(hwnd HWND, ps *PAINTSTRUCT) bool {
+	r0, _ := Syscall(procEndPaint.Addr(), uintptr(hwnd), uintptr(unsafe.Pointer(ps)))
+	return PtrToBool(r0)
+}
+
+func RegisterClassExW(wndclass *Wndclassex) (atom uint16, err error) {
 	r0, _, e1 := syscall.Syscall(procRegisterClassExW.Addr(), 1, uintptr(unsafe.Pointer(wndclass)), 0, 0)
 	atom = uint16(r0)
 	if atom == 0 {
@@ -67,9 +82,9 @@ func RegisterClassEx(wndclass *Wndclassex) (atom uint16, err error) {
 	return
 }
 
-func CreateWindowEx(exstyle uint32, classname *uint16, windowname *uint16, style uint32, x int32, y int32, width int32, height int32, wndparent HANDLE, menu HANDLE, instance HANDLE, param uintptr) (hwnd HANDLE, err error) {
-	r0, _, e1 := syscall.Syscall12(procCreateWindowExW.Addr(), 12, uintptr(exstyle), uintptr(unsafe.Pointer(classname)), uintptr(unsafe.Pointer(windowname)), uintptr(style), uintptr(x), uintptr(y), uintptr(width), uintptr(height), uintptr(wndparent), uintptr(menu), uintptr(instance), uintptr(param))
-	hwnd = HANDLE(r0)
+func CreateWindowExW(exstyle uint32, classname string, windowname string, style uint32, x int32, y int32, width int32, height int32, wndparent HWND, menu HMENU, instance HINSTANCE, param uintptr) (hwnd HWND, err error) {
+	r0, _, e1 := syscall.Syscall12(procCreateWindowExW.Addr(), 12, uintptr(exstyle), uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(classname))), uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(windowname))), uintptr(style), uintptr(x), uintptr(y), uintptr(width), uintptr(height), uintptr(wndparent), uintptr(menu), uintptr(instance), uintptr(param))
+	hwnd = HWND(r0)
 	if hwnd == 0 {
 		if e1 != 0 {
 			err = error(e1)
@@ -80,13 +95,13 @@ func CreateWindowEx(exstyle uint32, classname *uint16, windowname *uint16, style
 	return
 }
 
-func DefWindowProc(hwnd HANDLE, msg uint32, wparam uintptr, lparam uintptr) (lresult uintptr) {
+func DefWindowProcW(hwnd HWND, msg UINT, wparam WPARAM, lparam LPARAM) (lresult uintptr) {
 	r0, _, _ := syscall.Syscall6(procDefWindowProcW.Addr(), 4, uintptr(hwnd), uintptr(msg), uintptr(wparam), uintptr(lparam), 0, 0)
 	lresult = uintptr(r0)
 	return
 }
 
-func DestroyWindow(hwnd HANDLE) (err error) {
+func DestroyWindow(hwnd HWND) (err error) {
 	r1, _, e1 := syscall.Syscall(procDestroyWindow.Addr(), 1, uintptr(hwnd), 0, 0)
 	if int(r1) == 0 {
 		if e1 != 0 {
@@ -103,13 +118,13 @@ func PostQuitMessage(exitcode int32) {
 	return
 }
 
-func ShowWindow(hwnd HANDLE, cmdshow int32) (wasvisible bool) {
+func ShowWindow(hwnd HWND, cmdshow int32) (wasvisible bool) {
 	r0, _, _ := syscall.Syscall(procShowWindow.Addr(), 2, uintptr(hwnd), uintptr(cmdshow), 0)
 	wasvisible = bool(r0 != 0)
 	return
 }
 
-func UpdateWindow(hwnd HANDLE) (err error) {
+func UpdateWindow(hwnd HWND) (err error) {
 	r1, _, e1 := syscall.Syscall(procUpdateWindow.Addr(), 1, uintptr(hwnd), 0, 0)
 	if int(r1) == 0 {
 		if e1 != 0 {
@@ -121,7 +136,7 @@ func UpdateWindow(hwnd HANDLE) (err error) {
 	return
 }
 
-func GetMessage(msg *Msg, hwnd HANDLE, MsgFilterMin uint32, MsgFilterMax uint32) (ret int32, err error) {
+func GetMessage(msg *Msg, hwnd HWND, MsgFilterMin uint32, MsgFilterMax uint32) (ret int32, err error) {
 	r0, _, e1 := syscall.Syscall6(procGetMessageW.Addr(), 4, uintptr(unsafe.Pointer(msg)), uintptr(hwnd), uintptr(MsgFilterMin), uintptr(MsgFilterMax), 0, 0)
 	ret = int32(r0)
 	if ret == -1 {
@@ -140,15 +155,23 @@ func TranslateMessage(msg *Msg) (done bool) {
 	return
 }
 
-func DispatchMessage(msg *Msg) (ret int32) {
+func DispatchMessageW(msg *Msg) (ret int32) {
 	r0, _, _ := syscall.Syscall(procDispatchMessageW.Addr(), 1, uintptr(unsafe.Pointer(msg)), 0, 0)
 	ret = int32(r0)
 	return
 }
 
-func LoadIcon(instance HANDLE, iconname *uint16) (icon HANDLE, err error) {
-	r0, _, e1 := syscall.Syscall(procLoadIconW.Addr(), 2, uintptr(instance), uintptr(unsafe.Pointer(iconname)), 0)
-	icon = HANDLE(r0)
+func LoadIconS(instance HINSTANCE, iconname string) (icon HICON, err error) {
+	return LoadIconW(instance, resourceNameToPtr(iconname))
+}
+
+func LoadIcon(instance HINSTANCE, iconname *uint16) (icon HICON, err error) {
+	return LoadIconW(instance, uintptr(unsafe.Pointer(iconname)))
+}
+
+func LoadIconW(instance HINSTANCE, iconname uintptr) (icon HICON, err error) {
+	r0, _, e1 := syscall.Syscall(procLoadIconW.Addr(), 2, uintptr(instance), iconname, 0)
+	icon = HICON(r0)
 	if icon == 0 {
 		if e1 != 0 {
 			err = error(e1)
@@ -159,9 +182,17 @@ func LoadIcon(instance HANDLE, iconname *uint16) (icon HANDLE, err error) {
 	return
 }
 
-func LoadCursor(instance HANDLE, cursorname *uint16) (cursor HANDLE, err error) {
-	r0, _, e1 := syscall.Syscall(procLoadCursorW.Addr(), 2, uintptr(instance), uintptr(unsafe.Pointer(cursorname)), 0)
-	cursor = HANDLE(r0)
+func LoadCursorS(instance HINSTANCE, cursorname string) (cursor HCURSOR, err error) {
+	return LoadCursorW(instance, StringToUintptr(cursorname))
+}
+
+func LoadCursor(instance HINSTANCE, cursorname *uint16) (cursor HCURSOR, err error) {
+	return LoadCursorW(instance, uintptr(unsafe.Pointer(cursorname)))
+}
+
+func LoadCursorW(instance HINSTANCE, cursorname uintptr) (cursor HCURSOR, err error) {
+	r0, _, e1 := syscall.Syscall(procLoadCursorW.Addr(), 2, uintptr(instance), cursorname, 0)
+	cursor = HCURSOR(r0)
 	if cursor == 0 {
 		if e1 != 0 {
 			err = error(e1)
@@ -172,9 +203,9 @@ func LoadCursor(instance HANDLE, cursorname *uint16) (cursor HANDLE, err error) 
 	return
 }
 
-func SetCursor(cursor HANDLE) (precursor HANDLE, err error) {
+func SetCursor(cursor HCURSOR) (precursor HCURSOR, err error) {
 	r0, _, e1 := syscall.Syscall(procSetCursor.Addr(), 1, uintptr(cursor), 0, 0)
-	precursor = HANDLE(r0)
+	precursor = HCURSOR(r0)
 	if precursor == 0 {
 		if e1 != 0 {
 			err = error(e1)
@@ -185,13 +216,13 @@ func SetCursor(cursor HANDLE) (precursor HANDLE, err error) {
 	return
 }
 
-func SendMessage(hwnd HANDLE, msg uint32, wparam uintptr, lparam uintptr) (lresult uintptr) {
+func SendMessage(hwnd HWND, msg UINT, wparam WPARAM, lparam LPARAM) (lresult uintptr) {
 	r0, _, _ := syscall.Syscall6(procSendMessageW.Addr(), 4, uintptr(hwnd), uintptr(msg), uintptr(wparam), uintptr(lparam), 0, 0)
 	lresult = uintptr(r0)
 	return
 }
 
-func PostMessage(hwnd HANDLE, msg uint32, wparam uintptr, lparam uintptr) (err error) {
+func PostMessage(hwnd HWND, msg UINT, wparam WPARAM, lparam LPARAM) (err error) {
 	r1, _, e1 := syscall.Syscall6(procPostMessageW.Addr(), 4, uintptr(hwnd), uintptr(msg), uintptr(wparam), uintptr(lparam), 0, 0)
 	if int(r1) == 0 {
 		if e1 != 0 {
@@ -217,7 +248,7 @@ func GetKeyboardState() (keyState []byte, err error) {
 	return
 }
 
-func SetFocus(hwnd HANDLE) (err error) {
+func SetFocus(hwnd HWND) (err error) {
 	r1, _, e1 := syscall.Syscall(procSetFocus.Addr(), 1, uintptr(hwnd), 0, 0)
 	if int(r1) == 0 {
 		if e1 != 0 {
@@ -225,6 +256,82 @@ func SetFocus(hwnd HANDLE) (err error) {
 		} else {
 			err = syscall.EINVAL
 		}
+	}
+	return
+}
+
+//------------------------------------------------
+
+func DialogBoxParam(instRes HINSTANCE, name string, parent HWND,
+	proc uintptr, param uintptr) (int, error) {
+	ret, err := Syscall(procDialogBoxParamW.Addr(), uintptr(instRes), resourceNameToPtr(name), uintptr(parent), proc, param)
+	return int(ret), err
+}
+
+func EndDialog(h HWND, result int) (bool, error) {
+	ret, err := Syscall(procEndDialog.Addr(), uintptr(h), uintptr(result))
+	return PtrToBool(ret), err
+}
+
+func GetDlgItem(h HWND, id int) HWND {
+	ret, _ := Syscall(procGetDlgItem.Addr(), uintptr(h), uintptr(id))
+	return HWND(ret)
+}
+
+func GetWindowLongPtr(h HWND, index int) (ret uintptr, err error) {
+	if is64Bit {
+		ret, err = Syscall(procGetWindowLongPtrW.Addr(), uintptr(h), uintptr(index))
+	} else {
+		ret, err = Syscall(procGetWindowLongW.Addr(), uintptr(h), uintptr(index))
+	}
+	return
+}
+
+func LoadMenu(instRes HINSTANCE, name string) (HMENU, error) {
+	ret, err := Syscall(procLoadMenuW.Addr(), uintptr(instRes), resourceNameToPtr(name))
+	return HMENU(ret), err
+}
+
+func LoadString(inst HINSTANCE, id uint) (ret string, err error) {
+	var text [4096]uint16
+	var r uintptr
+	r, err = Syscall(procLoadStringW.Addr(), uintptr(inst), uintptr(id),
+		uintptr(unsafe.Pointer(&text[0])), 4096)
+	if int(r) <= 0 {
+		ret = ""
+	} else {
+		ret = string(utf16.Decode(text[0:r]))
+	}
+	return
+}
+
+func MessageBoxW(parent HWND, text, title string, boxType BoxType) (int, error) {
+	ret, err := Syscall(procMessageBoxW.Addr(), uintptr(parent),
+		StringToUintptr(text), StringToUintptr(title), uintptr(boxType))
+	return int(ret), err
+}
+
+func UnregisterClassW(name string) (bool, error) {
+	ret, err := Syscall(procUnregisterClassW.Addr(), StringToUintptr(name), 0)
+	return PtrToBool(ret), err
+}
+
+func SendDlgItemMessageW(m *Msg, id int) (LRESULT, error) {
+	ret, err := Syscall(procSendDlgItemMessageW.Addr(), uintptr(m.Hwnd), uintptr(id),
+		uintptr(m.Message), uintptr(m.Wparam), uintptr(m.Lparam))
+	return LRESULT(ret), err
+}
+
+func SetMenu(hwnd HWND, menu HMENU) (bool, error) {
+	ret, err := Syscall(procSetMenu.Addr(), uintptr(hwnd), uintptr(menu))
+	return PtrToBool(ret), err
+}
+
+func SetWindowLongPtrW(h HWND, index int, value uintptr) (ret uintptr, err error) {
+	if is64Bit {
+		ret, err = Syscall(procSetWindowLongPtrW.Addr(), uintptr(h), uintptr(index), value)
+	} else {
+		ret, err = Syscall(procSetWindowLongW.Addr(), uintptr(h), uintptr(index), value)
 	}
 	return
 }

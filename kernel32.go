@@ -1,18 +1,20 @@
 package winapi
 
-import "unsafe"
 import "syscall"
 
 var (
 	modkernel32 = syscall.NewLazyDLL("kernel32.dll")
 
-	procGetModuleHandleW = modkernel32.NewProc("GetModuleHandleW")
-	procFreeConsole      = modkernel32.NewProc("FreeConsole")
+	procGetModuleHandleW    = modkernel32.NewProc("GetModuleHandleW")
+	procFreeConsole         = modkernel32.NewProc("FreeConsole")
+	procGetLastError        = modkernel32.NewProc("GetLastError")
+	procGetLocaleInfoW      = modkernel32.NewProc("GetLocaleInfoW")
+	procSetSystemPowerState = modkernel32.NewProc("SetSystemPowerState")
 )
 
-func GetModuleHandle(modname *uint16) (handle HANDLE, err error) {
-	r0, _, e1 := syscall.Syscall(procGetModuleHandleW.Addr(), 1, uintptr(unsafe.Pointer(modname)), 0, 0)
-	handle = HANDLE(r0)
+func GetModuleHandle(modname string) (handle HWND, err error) {
+	r0, _, e1 := syscall.Syscall(procGetModuleHandleW.Addr(), 1, StringToUintptr(modname), 0, 0)
+	handle = HWND(r0)
 	if handle == 0 {
 		if e1 != 0 {
 			err = error(e1)

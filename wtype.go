@@ -1,53 +1,59 @@
 package winapi
 
-import (
-	"syscall"
+type (
+	HANDLE    uintptr
+	HWND      HANDLE
+	HMENU     HANDLE
+	HMODULE   HANDLE
+	HINSTANCE HANDLE
+	HDC       HANDLE
+	HRGN      HANDLE
+	HBRUSH    HANDLE
+	HICON     HANDLE
+	HCURSOR   HANDLE
+	HPEN      HANDLE
+	HPALETTE  HANDLE
+	HBITMAP   HANDLE
+	HFONT     HANDLE
+
+	WPARAM   uintptr
+	LPARAM   uintptr
+	LRESULT  int
+	COLORREF uint32
+	LANGID   uint16
+
+	PROPID       ULONG
+	HMETAFILE    uintptr
+	HENHMETAFILE uintptr
+
+	UINT32    uint32
+	ULONG_PTR uintptr
+	UINT_PTR  uintptr
+	DWORD_PTR uintptr
+
+	BOOL     bool
+	CHAR     int8
+	BYTE     uint8
+	SHORT    int16
+	INT16    int16
+	WORD     uint16
+	UINT16   uint16
+	INT      int32 //, int
+	UINT     uint32
+	LONG     int32
+	ULONG    uint32
+	DWORD    uint32
+	LONGLONG int64
+	DWORD64  uint64
+	FLOAT    float32
+	DOUBLE   float64
+	WCHAR    uint16
+	LPSTR    *byte
+	LPCSTR   *byte //syscall.StringBytePtr()
+	LPWSTR   *uint16
+	LPCWSTR  *uint16 //syscall.StringToUTF16Ptr()
+	LPBYTE   *BYTE
 )
-
-type HDC syscall.Handle
-type HANDLE uintptr
-
-type LANGID uint16
-type HRGN uintptr //unsafe.Pointer
-type PROPID ULONG
-type HBITMAP uintptr
-type HMETAFILE uintptr
-
-type HPALETTE uintptr
-type HENHMETAFILE uintptr
-
-type HICON uintptr
-type HINSTANCE uintptr
-type HFONT uintptr
-type COLORREF DWORD
-
-type UINT32 uint32
-type ULONG_PTR uintptr
-type UINT_PTR uintptr
-type DWORD_PTR uintptr
-
-type BOOL bool
-type CHAR int8
-type BYTE uint8
-type SHORT int16
-type INT16 int16
-type WORD uint16
-type UINT16 uint16
-type INT int32 //, int
-type UINT uint32
-type LONG int32
-type ULONG uint32
-type DWORD uint32
-type LONGLONG int64
-type DWORD64 uint64
-type FLOAT float32
-type DOUBLE float64
-type WCHAR uint16
-type LPSTR *byte
-type LPCSTR *byte //syscall.StringBytePtr()
-type LPWSTR *uint16
-type LPCWSTR *uint16 //syscall.StringToUTF16Ptr()
-type LPBYTE *BYTE
 
 const (
 	TRUE  BOOL = true

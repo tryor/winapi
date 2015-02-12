@@ -11,7 +11,7 @@ var (
 
 	procCreateCompatibleDC = modgdi32.NewProc("CreateCompatibleDC")
 	procGetObjectA         = modgdi32.NewProc("GetObjectA")
-	procGetObject          = modgdi32.NewProc("GetObjectW")
+	procGetObjectW         = modgdi32.NewProc("GetObjectW")
 	procSelectObject       = modgdi32.NewProc("SelectObject")
 	procDeleteObject       = modgdi32.NewProc("DeleteObject")
 
@@ -20,7 +20,7 @@ var (
 	procBitBlt                 = modgdi32.NewProc("BitBlt")
 )
 
-func CreateCompatibleDC(hwnd HANDLE) (hdc HDC) {
+func CreateCompatibleDC(hwnd HWND) (hdc HDC) {
 	r0, _, _ := syscall.Syscall(procCreateCompatibleDC.Addr(), 1, uintptr(hwnd), 0, 0)
 	hdc = HDC(r0)
 	return hdc
@@ -32,8 +32,8 @@ func GetObjectA(hgdiobj HANDLE, cbBuffer uintptr, object uintptr) (size uint32) 
 	return size
 }
 
-func GetObject(hgdiobj HANDLE, cbBuffer uintptr, object uintptr) (size uint32) {
-	r0, _, _ := syscall.Syscall(procGetObject.Addr(), 3, uintptr(hgdiobj), uintptr(cbBuffer), object)
+func GetObjectW(hgdiobj HANDLE, cbBuffer uintptr, object uintptr) (size uint32) {
+	r0, _, _ := syscall.Syscall(procGetObjectW.Addr(), 3, uintptr(hgdiobj), uintptr(cbBuffer), object)
 	size = uint32(r0)
 	return size
 }
