@@ -13,7 +13,13 @@ var (
 )
 
 func GetModuleHandle(modname string) (handle HWND, err error) {
-	r0, _, e1 := syscall.Syscall(procGetModuleHandleW.Addr(), 1, StringToUintptr(modname), 0, 0)
+	var modname_ uintptr
+	if modname == "" {
+		modname_ = 0
+	} else {
+		modname_ = StringToUintptr(modname)
+	}
+	r0, _, e1 := syscall.Syscall(procGetModuleHandleW.Addr(), 1, modname_, 0, 0)
 	handle = HWND(r0)
 	if handle == 0 {
 		if e1 != 0 {

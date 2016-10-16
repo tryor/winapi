@@ -13,6 +13,8 @@ type RECT struct {
 	Bottom LONG
 }
 
+type LPCRECT *RECT
+
 var RECT_SIZE = UINT(unsafe.Sizeof(RECT{}))
 
 type RECTL RECT

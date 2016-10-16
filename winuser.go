@@ -87,6 +87,30 @@ type Wndclassex struct {
 	IconSm     HICON
 }
 
+type Wndclass struct {
+	Style      uint32
+	WndProc    uintptr
+	ClsExtra   int32
+	WndExtra   int32
+	Instance   HINSTANCE
+	Icon       HICON
+	Cursor     HCURSOR
+	Background HANDLE
+	MenuName   *uint16
+	ClassName  *uint16
+}
+
+//    UINT        style;
+//    WNDPROC     lpfnWndProc;
+//    int         cbClsExtra;
+//    int         cbWndExtra;
+//    HINSTANCE   hInstance;
+//    HICON       hIcon;
+//    HCURSOR     hCursor;
+//    HBRUSH      hbrBackground;
+//    LPCWSTR     lpszMenuName;
+//    LPCWSTR     lpszClassName;
+
 type PAINTSTRUCT struct {
 	HDC         HDC
 	Erase       int32 // bool

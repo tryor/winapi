@@ -16,6 +16,7 @@ var (
 	procBeginPaint          = moduser32.NewProc("BeginPaint")
 	procCreateDialogParamW  = moduser32.NewProc("CreateDialogParamW")
 	procCreateWindowExW     = moduser32.NewProc("CreateWindowExW")
+	procCreateWindowExA     = moduser32.NewProc("CreateWindowExA")
 	procDefWindowProcW      = moduser32.NewProc("DefWindowProcW")
 	procDestroyWindow       = moduser32.NewProc("DestroyWindow")
 	procDialogBoxParamW     = moduser32.NewProc("DialogBoxParamW")
@@ -36,6 +37,7 @@ var (
 	procPostMessageW        = moduser32.NewProc("PostMessageW")
 	procPostQuitMessage     = moduser32.NewProc("PostQuitMessage")
 	procRegisterClassExW    = moduser32.NewProc("RegisterClassExW")
+	procRegisterClassW      = moduser32.NewProc("RegisterClassW")
 	procReleaseDC           = moduser32.NewProc("ReleaseDC")
 	procSendMessageW        = moduser32.NewProc("SendMessageW")
 	procSendDlgItemMessageW = moduser32.NewProc("SendDlgItemMessageW")
@@ -45,6 +47,8 @@ var (
 	procShowWindow          = moduser32.NewProc("ShowWindow")
 	procTranslateMessage    = moduser32.NewProc("TranslateMessage")
 	procUpdateWindow        = moduser32.NewProc("UpdateWindow")
+	procRedrawWindow        = moduser32.NewProc("RedrawWindow")
+	procInvalidateRect      = moduser32.NewProc("InvalidateRect")
 )
 
 func GetDC(hwnd HWND) (hdc HDC) {
@@ -82,8 +86,34 @@ func RegisterClassExW(wndclass *Wndclassex) (atom uint16, err error) {
 	return
 }
 
+func RegisterClassW(wndclass *Wndclass) (atom uint16, err error) {
+	r0, _, e1 := syscall.Syscall(procRegisterClassW.Addr(), 1, uintptr(unsafe.Pointer(wndclass)), 0, 0)
+	atom = uint16(r0)
+	if atom == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
 func CreateWindowExW(exstyle uint32, classname string, windowname string, style uint32, x int32, y int32, width int32, height int32, wndparent HWND, menu HMENU, instance HINSTANCE, param uintptr) (hwnd HWND, err error) {
 	r0, _, e1 := syscall.Syscall12(procCreateWindowExW.Addr(), 12, uintptr(exstyle), uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(classname))), uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(windowname))), uintptr(style), uintptr(x), uintptr(y), uintptr(width), uintptr(height), uintptr(wndparent), uintptr(menu), uintptr(instance), uintptr(param))
+	hwnd = HWND(r0)
+	if hwnd == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func CreateWindowExA(exstyle uint32, classname string, windowname string, style uint32, x int32, y int32, width int32, height int32, wndparent HWND, menu HMENU, instance HINSTANCE, param uintptr) (hwnd HWND, err error) {
+	r0, _, e1 := syscall.Syscall12(procCreateWindowExA.Addr(), 12, uintptr(exstyle), uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(classname))), uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(windowname))), uintptr(style), uintptr(x), uintptr(y), uintptr(width), uintptr(height), uintptr(wndparent), uintptr(menu), uintptr(instance), uintptr(param))
 	hwnd = HWND(r0)
 	if hwnd == 0 {
 		if e1 != 0 {
@@ -334,4 +364,20 @@ func SetWindowLongPtrW(h HWND, index int, value uintptr) (ret uintptr, err error
 		ret, err = Syscall(procSetWindowLongW.Addr(), uintptr(h), uintptr(index), value)
 	}
 	return
+}
+
+//prgnUpdate *CRgn
+func RedrawWindow(hwnd HWND, lpRectUpdate LPCRECT, prgnUpdate HANDLE, flags UINT) (bool, error) {
+	ret, err := Syscall(procRedrawWindow.Addr(), uintptr(hwnd), uintptr(unsafe.Pointer(lpRectUpdate)), uintptr(prgnUpdate), uintptr(flags))
+	return PtrToBool(ret), err
+}
+
+// LPCRECT lpRect, BOOL bErase = TRUE
+func InvalidateRect(hwnd HWND, lpRectUpdate LPCRECT, bErase BOOL) error {
+	var bErase_ int8
+	if bErase {
+		bErase_ = 1
+	}
+	_, err := Syscall(procInvalidateRect.Addr(), uintptr(hwnd), uintptr(unsafe.Pointer(lpRectUpdate)), uintptr(bErase_))
+	return err
 }
