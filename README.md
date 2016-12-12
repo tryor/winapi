@@ -8,7 +8,7 @@ winapi for windows, a part of gdi
 ============
 To install:
 
-    go get -u github.com/trygo/winapi
+    go get -u github.com/tryor/winapi
 	
 	
 ## List
