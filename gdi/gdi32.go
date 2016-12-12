@@ -1,9 +1,10 @@
 package gdi
 
 import (
-	. "github.com/trygo/winapi"
 	"syscall"
 	"unsafe"
+
+	. "github.com/tryor/winapi"
 )
 
 var (

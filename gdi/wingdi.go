@@ -1,8 +1,9 @@
 package gdi
 
 import (
-	. "github.com/trygo/winapi"
 	"unsafe"
+
+	. "github.com/tryor/winapi"
 )
 
 const (
