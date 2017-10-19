@@ -10,6 +10,8 @@ var (
 	procGetLastError        = modkernel32.NewProc("GetLastError")
 	procGetLocaleInfoW      = modkernel32.NewProc("GetLocaleInfoW")
 	procSetSystemPowerState = modkernel32.NewProc("SetSystemPowerState")
+	procCreateRemoteThread  = modkernel32.NewProc("CreateRemoteThread")
+	procGetExitCodeThread   = modkernel32.NewProc("GetExitCodeThread")
 )
 
 func GetModuleHandle(modname string) (handle HWND, err error) {
@@ -38,5 +40,33 @@ func FreeConsole() (ret uint64, err error) {
 	} else {
 		ret = uint64(r0)
 	}
+	return
+}
+
+func CreateRemoteThread(hProcess w32.HANDLE, memStartAddress uintptr) (handle HWND, err error) {
+	var threadHandle w32.HANDLE
+	r0, _, e1 := createRemoteThreadProc.Call(uintptr(hProcess), uintptr(0), uintptr(0), uintptr(memStartAddress), uintptr(threadHandle))
+	handle = HWND(r0)
+	if handle == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func GetExitCodeThread(hProcess w32.HANDLE) (exitCode uint, err error) {
+	ok, _, err := getExitCodeThreadProc.Call(uintptr(hProcess), uintptr(unsafe.Pointer(&exitCode)))
+
+	if ok == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+
 	return
 }
