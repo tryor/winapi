@@ -1,6 +1,8 @@
 package winapi
 
 import (
+	"errors"
+	"log"
 	"syscall"
 	"unicode/utf16"
 	"unsafe"
@@ -49,7 +51,379 @@ var (
 	procUpdateWindow        = moduser32.NewProc("UpdateWindow")
 	procRedrawWindow        = moduser32.NewProc("RedrawWindow")
 	procInvalidateRect      = moduser32.NewProc("InvalidateRect")
+
+	procGetForegroundWindow = moduser32.NewProc("GetForegroundWindow")
+	procGetActiveWindow     = moduser32.NewProc("GetActiveWindow")
+
+	procTrackPopupMenu    = moduser32.NewProc("TrackPopupMenu")
+	procSetActiveWindow   = moduser32.NewProc("SetActiveWindow")
+	procAttachThreadInput = moduser32.NewProc("AttachThreadInput")
+
+	procSetTimer  = moduser32.NewProc("SetTimer")
+	procKillTimer = moduser32.NewProc("KillTimer")
+
+	procLoadBitmapW = moduser32.NewProc("LoadBitmapW")
+
+	procGetWindowRect  = moduser32.NewProc("GetWindowRect")
+	procGetMessageTime = moduser32.NewProc("GetMessageTime")
+	procPeekMessageW   = moduser32.NewProc("PeekMessageW")
+
+	procSetParent = moduser32.NewProc("SetParent")
+
+	procCallWindowProcW = moduser32.NewProc("CallWindowProcW")
+	procScreenToClient  = moduser32.NewProc("ScreenToClient")
+
+	procSetWindowPos     = moduser32.NewProc("SetWindowPos")
+	procBringWindowToTop = moduser32.NewProc("BringWindowToTop")
+
+	procAdjustWindowRect = moduser32.NewProc("AdjustWindowRect")
+
+	procMoveWindow = moduser32.NewProc("MoveWindow")
+
+	procEnableWindow = moduser32.NewProc("EnableWindow")
+
+	procSetWindowTextW = moduser32.NewProc("SetWindowTextW")
+	procGetWindowTextW = moduser32.NewProc("GetWindowTextW")
+
+	procSetClassLong = moduser32.NewProc("SetClassLongW")
+
+	procSetLayeredWindowAttributes = moduser32.NewProc("SetLayeredWindowAttributes")
+
+	procGetDesktopWindow = moduser32.NewProc("GetDesktopWindow")
+
+	procCreatePopupMenu = moduser32.NewProc("CreatePopupMenu")
+	procAppendMenu      = moduser32.NewProc("AppendMenuW")
+
+	procLoadImage = moduser32.NewProc("LoadImageW")
+
+	procGetClientRect = moduser32.NewProc("GetClientRect")
+
+	procClientToScreen = moduser32.NewProc("ClientToScreen")
+
+	procGetCursorPos = moduser32.NewProc("GetCursorPos")
+
+	procSetForegroundWindow = moduser32.NewProc("SetForegroundWindow")
+
+	procMessageBoxTimeoutW = moduser32.NewProc("MessageBoxTimeoutW")
+
+	procGetWindowThreadProcessId = moduser32.NewProc("GetWindowThreadProcessId")
+
+	procRegisterHotKey = moduser32.NewProc("RegisterHotKey")
 )
+
+//__in_opt HWND hWnd,
+//__in int id,
+//__in UINT fsModifiers,
+//__in UINT vk
+
+func RegisterHotKey(hwnd HWND, id int, fsModifiers UINT, vk UINT) (err error) {
+	r, _, e1 := procRegisterHotKey.Call(uintptr(hwnd), uintptr(id), uintptr(fsModifiers), uintptr(vk))
+	if r == 0 {
+		if e1 == nil {
+			err = syscall.EINVAL
+		} else {
+			err = error(e1)
+		}
+	}
+	return
+}
+
+func GetWindowThreadProcessId(hwnd HWND) (id, pid uintptr) {
+	id, _, _ = procGetWindowThreadProcessId.Call(uintptr(hwnd), uintptr(unsafe.Pointer(&pid)))
+	return
+}
+
+func SetForegroundWindow(hWnd HWND) bool {
+	r, _, _ := procSetForegroundWindow.Call(uintptr(hWnd))
+	return r != 0
+}
+
+func GetCursorPos() (p POINT, err error) {
+	r, e1 := Syscall(procGetCursorPos.Addr(), uintptr(unsafe.Pointer(&p)))
+	if r == 0 {
+		if e1 != nil {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+
+	}
+	return
+}
+
+//BOOL GetClientRect(
+//HWND hWnd, // 窗口句柄
+//LPRECT lpRect // 客户区坐标
+//);
+
+func GetClientRect(hWnd HWND) (rect RECT, err error) {
+	r, e1 := Syscall(procGetClientRect.Addr(), uintptr(hWnd), uintptr(unsafe.Pointer(&rect)))
+	if r == 0 {
+		if e1 != nil {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+
+	}
+	return
+}
+
+//    _In_opt_ HINSTANCE hInst,
+//    _In_ LPCWSTR name,
+//    _In_ UINT type,
+//    _In_ int cx,
+//    _In_ int cy,
+//    _In_ UINT fuLoad);
+
+func LoadImageFromFile(name string, typ IMAGE_TYPE) (h HWND, err error) {
+	return LoadImageW(0, StringToUintptr(name), typ, 0, 0, LR_LOADFROMFILE)
+}
+
+func LoadImageW(hInst HINSTANCE, name uintptr, typ IMAGE_TYPE, cx, cy int, fuLoad UINT) (h HWND, err error) {
+	r, e1 := Syscall(procLoadImage.Addr(), uintptr(hInst), name, uintptr(typ), uintptr(cx), uintptr(cy), uintptr(fuLoad))
+	if r == 0 {
+		if e1 != nil {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+
+	} else {
+		h = HWND(r)
+	}
+	return
+}
+
+func AppendMenuString(h HWND, wFlags, wIDNewItem int, lpNewItem string) (mh HWND, err error) {
+	wFlags = wFlags | MF_STRING
+
+	return AppendMenu(h, wFlags, wIDNewItem, StringToUintptr(lpNewItem))
+}
+
+func AppendMenu(h HWND, wFlags, wIDNewItem int, lpNewItem uintptr) (mh HWND, err error) {
+	r, e1 := Syscall(procAppendMenu.Addr(), uintptr(h), uintptr(wFlags), uintptr(wIDNewItem), uintptr(lpNewItem))
+	if r == 0 {
+		if e1 != nil {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+
+	}
+	h = HWND(r)
+	return
+}
+
+func CreatePopupMenu() (HWND, error) {
+	r, err := Syscall(procCreatePopupMenu.Addr())
+	if r == 0 {
+		if err != nil {
+			return 0, err
+		} else {
+			return 0, errors.New("CreatePopupMenu error")
+		}
+
+	}
+	return HWND(r), err
+}
+
+func GetDesktopWindow() (HWND, error) {
+	r, err := Syscall(procGetDesktopWindow.Addr())
+	return HWND(r), err
+}
+
+func SetLayeredWindowAttributes(hWnd HWND, crKey COLORREF, bAlpha BYTE, dwFlags DWORD) (bool, error) {
+	ret, err := Syscall(procSetLayeredWindowAttributes.Addr(), uintptr(hWnd), uintptr(crKey), uintptr(bAlpha), uintptr(dwFlags))
+	return PtrToBool(ret), err
+}
+
+func SetClassLong(hWnd HWND, nIndex int, dwNewLong HCURSOR) (bool, error) {
+	ret, err := Syscall(procSetClassLong.Addr(), uintptr(hWnd), uintptr(nIndex), uintptr(dwNewLong))
+	return PtrToBool(ret), err
+}
+
+func GetWindowText(hWnd HWND) (text string, err error) {
+	buff := make([]uint16, 255+1)
+	_, err = Syscall(procGetWindowTextW.Addr(), uintptr(hWnd), uintptr(unsafe.Pointer(&buff[0])), 255)
+	return syscall.UTF16ToString(buff), err
+}
+
+func SetWindowTextW(hWnd HWND, text string) (bool, error) {
+	ret, err := Syscall(procSetWindowTextW.Addr(), uintptr(hWnd), StringToUintptr(text))
+	return PtrToBool(ret), err
+}
+
+func EnableWindow(hWnd HWND, b bool) (bool, error) {
+	ret, err := Syscall(procEnableWindow.Addr(), uintptr(hWnd), BoolToPtr(b))
+	return PtrToBool(ret), err
+}
+
+func MoveWindow(hWnd HWND, x, y, w, h int32) (bool, error) {
+	ret, err := Syscall(procMoveWindow.Addr(), uintptr(hWnd), uintptr(x), uintptr(y), uintptr(w), uintptr(h), BoolToPtr(false))
+	return PtrToBool(ret), err
+}
+
+//func SetWindowRect(hWnd HWND, x, y, w, h int32) (bool, error) {
+
+//}
+
+func AdjustWindowRect(lpRectUpdate LPCRECT, style uintptr, bMenu bool) (bool, error) {
+	ret, err := Syscall(procAdjustWindowRect.Addr(), uintptr(unsafe.Pointer(lpRectUpdate)), style, BoolToPtr(bMenu))
+	return PtrToBool(ret), err
+}
+
+func BringWindowToTop(hWnd HWND) bool {
+	r, _, _ := procBringWindowToTop.Call(uintptr(hWnd))
+	return r != 0
+}
+
+func SetWindowPos(hWnd, hWndInsertAfter HWND, x, y, cx, cy int32, uFlags uint32) bool {
+	r, _, _ := procSetWindowPos.Call(uintptr(hWnd), uintptr(hWndInsertAfter), uintptr(x), uintptr(y), uintptr(cx), uintptr(cy), uintptr(uFlags))
+	return r != 0
+}
+
+func ScreenToClient(hWnd HWND, lpPoint *POINT) bool {
+	r, _, _ := procScreenToClient.Call(uintptr(hWnd), uintptr(unsafe.Pointer(lpPoint)))
+	return r != 0
+}
+
+func ClientToScreen(hWnd HWND, lpPoint *POINT) bool {
+	r, _, _ := procClientToScreen.Call(uintptr(hWnd), uintptr(unsafe.Pointer(lpPoint)))
+	return r != 0
+}
+
+func CallWindowProcW(lpPrevWndFunc uintptr, hWnd HWND, Msg uint32, wParam, lParam uintptr) uintptr {
+	r, _, _ := procCallWindowProcW.Call(lpPrevWndFunc, uintptr(hWnd), uintptr(Msg), wParam, lParam)
+	return r
+}
+
+func SetParent(hWndChild, hWndNewParent HWND) (h HWND, err error) {
+	r0, _, e1 := procSetParent.Call(uintptr(hWndChild), uintptr(hWndNewParent))
+	if r0 == 0 {
+		if e1 != nil {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	h = HWND(r0)
+	return
+}
+
+func PeekMessage(msg *Msg, hWnd HWND, wMSGfilterMin, wMsgFilterMax, wRemoveMsg UINT) bool {
+	r0, _, _ := procPeekMessageW.Call(uintptr(unsafe.Pointer(msg)), uintptr(hWnd), uintptr(wMSGfilterMin), uintptr(wMsgFilterMax), uintptr(wRemoveMsg))
+	return r0 != 0
+}
+func GetMessageTime() DWORD {
+	r0, _, _ := procGetMessageTime.Call()
+	return DWORD(r0)
+}
+
+func GetWindowRect(h HWND) (rect RECT, err error) {
+	r0, _, e1 := procGetWindowRect.Call(uintptr(h), uintptr(unsafe.Pointer(&rect)))
+	if r0 == 0 {
+		if e1 != nil {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func LoadBitmapS(instance HINSTANCE, name string) (icon HBITMAP, err error) {
+	return LoadBitmapW(instance, resourceNameToPtr(name))
+}
+
+func LoadBitmap(instance HINSTANCE, name *uint16) (icon HBITMAP, err error) {
+	return LoadBitmapW(instance, uintptr(unsafe.Pointer(name)))
+}
+
+func LoadBitmapW(instance HINSTANCE, name uintptr) (icon HBITMAP, err error) {
+	r0, _, e1 := syscall.Syscall(procLoadBitmapW.Addr(), 2, uintptr(instance), name, 0)
+	icon = HBITMAP(r0)
+	if icon == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+//SetTimer(
+//  hWnd: HWND;               {与定时器相关联的窗口句柄}
+//  nIDEvent: UINT;           {指定一个非 0 的定时器标识符}
+//  uElapse: UINT;            {指定间隔时间, 单位是毫秒}
+//  lpTimerFunc: TFNTimerProc {每到时间后, 要调用的函数的指针}
+//): UINT;                    {返回定时器标识符; 失败返回 0}
+
+//TimerProc(
+//  hWnd: HWND;    {与定时器相关联的窗口句柄}
+//  uMsg: UINT;    {WM_TIMER 消息}
+//  idEvent: UINT; {定时器的标识符}
+//  Time: DWORD    {以世界时间公约格式(UTC)指定的系统时间}
+//);
+
+//移除定时器函数的声明:
+//KillTimer(
+//  hWnd: HWND;    {与定时器相关联的窗口句柄}
+//  uIDEvent: UINT {定时器标识符}
+//): BOOL;
+
+type TFNTimerProc func(hWnd uintptr, uMsg UINT, idEvent TimerEventID, Time DWORD)
+
+func SetTimer(hWnd uintptr, nIDEvent TimerEventID, uElapse UINT, lpTimerFunc TFNTimerProc) UINT {
+	var lpTimerFunc_ uintptr
+	if lpTimerFunc != nil {
+		lpTimerFunc_ = syscall.NewCallback(lpTimerFunc)
+	}
+	r0, _, _ := procSetTimer.Call(hWnd, uintptr(nIDEvent), uintptr(uElapse), lpTimerFunc_)
+	return UINT(r0)
+}
+
+func KillTimer(hWnd uintptr, nIDEvent TimerEventID) bool {
+	r0, _, _ := procKillTimer.Call(hWnd, uintptr(nIDEvent))
+	return r0 != 0
+}
+
+//idAttach As Long, ByVal idAttachTo As Long, ByVal fAttach
+func AttachThreadInput(idAttach uintptr, idAttachTo uintptr, fAttach bool) bool {
+	var fAttach_ uintptr = 0
+	if fAttach {
+		fAttach_ = 1
+	}
+	r0, _, err := procAttachThreadInput.Call(idAttach, uintptr(idAttachTo), fAttach_)
+
+	if r0 == 0 {
+		log.Println("AttachThreadInput.err:", err)
+	}
+
+	return r0 != 0
+}
+
+func SetActiveWindow(hWnd HWND) bool {
+	r0, _, _ := procSetActiveWindow.Call(uintptr(hWnd))
+	return r0 != 0
+}
+
+func TrackPopupMenu(m HMENU, uFlags UINT, x, y int, hWnd HWND) (bool, *RECT) {
+	rect := &RECT{}
+	r0, _, _ := procTrackPopupMenu.Call(uintptr(m), uintptr(uFlags), uintptr(x), uintptr(y), uintptr(0), uintptr(hWnd), uintptr(unsafe.Pointer(rect)))
+	return r0 != 0, rect
+}
+
+func GetActiveWindow() HWND {
+	r0, _, _ := procGetActiveWindow.Call()
+	return HWND(r0)
+}
+
+func GetForegroundWindow() HWND {
+	r0, _, _ := procGetForegroundWindow.Call()
+	return HWND(r0)
+}
 
 func GetDC(hwnd HWND) (hdc HDC) {
 	r0, _ := Syscall(procGetDC.Addr(), uintptr(hwnd))
@@ -100,7 +474,12 @@ func RegisterClassW(wndclass *Wndclass) (atom uint16, err error) {
 }
 
 func CreateWindowExW(exstyle uint32, classname string, windowname string, style uint32, x int32, y int32, width int32, height int32, wndparent HWND, menu HMENU, instance HINSTANCE, param uintptr) (hwnd HWND, err error) {
-	r0, _, e1 := syscall.Syscall12(procCreateWindowExW.Addr(), 12, uintptr(exstyle), uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(classname))), uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(windowname))), uintptr(style), uintptr(x), uintptr(y), uintptr(width), uintptr(height), uintptr(wndparent), uintptr(menu), uintptr(instance), uintptr(param))
+	classnamePtr := uintptr(0)
+	if classname != "" {
+		classnamePtr = uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(classname)))
+	}
+
+	r0, _, e1 := syscall.Syscall12(procCreateWindowExW.Addr(), 12, uintptr(exstyle), classnamePtr, uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(windowname))), uintptr(style), uintptr(x), uintptr(y), uintptr(width), uintptr(height), uintptr(wndparent), uintptr(menu), uintptr(instance), uintptr(param))
 	hwnd = HWND(r0)
 	if hwnd == 0 {
 		if e1 != 0 {
@@ -341,6 +720,12 @@ func MessageBoxW(parent HWND, text, title string, boxType BoxType) (int, error) 
 	return int(ret), err
 }
 
+func MessageBoxTimeoutW(parent HWND, text, title string, boxType BoxType, wLanguageId uint16, dwMilliseconds uint32) (int, error) {
+	ret, err := Syscall(procMessageBoxTimeoutW.Addr(), uintptr(parent),
+		StringToUintptr(text), StringToUintptr(title), uintptr(boxType), uintptr(wLanguageId), uintptr(dwMilliseconds))
+	return int(ret), err
+}
+
 func UnregisterClassW(name string) (bool, error) {
 	ret, err := Syscall(procUnregisterClassW.Addr(), StringToUintptr(name), 0)
 	return PtrToBool(ret), err
@@ -368,7 +753,11 @@ func SetWindowLongPtrW(h HWND, index int, value uintptr) (ret uintptr, err error
 
 //prgnUpdate *CRgn
 func RedrawWindow(hwnd HWND, lpRectUpdate LPCRECT, prgnUpdate HANDLE, flags UINT) (bool, error) {
-	ret, err := Syscall(procRedrawWindow.Addr(), uintptr(hwnd), uintptr(unsafe.Pointer(lpRectUpdate)), uintptr(prgnUpdate), uintptr(flags))
+	var lpRectUpdatePtr = uintptr(0)
+	if lpRectUpdate != nil {
+		lpRectUpdatePtr = uintptr(unsafe.Pointer(lpRectUpdate))
+	}
+	ret, err := Syscall(procRedrawWindow.Addr(), uintptr(hwnd), lpRectUpdatePtr, uintptr(prgnUpdate), uintptr(flags))
 	return PtrToBool(ret), err
 }
 

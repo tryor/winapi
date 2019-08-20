@@ -4,6 +4,50 @@ import (
 	"unsafe"
 )
 
+const (
+
+	/*
+	 * Class field offsets for GetClassLong()
+	 */
+	GCL_MENUNAME      = (-8)
+	GCL_HBRBACKGROUND = (-10)
+	GCL_HCURSOR       = (-12)
+	GCL_HICON         = (-14)
+	GCL_HMODULE       = (-16)
+	GCL_CBWNDEXTRA    = (-18)
+	GCL_CBCLSEXTRA    = (-20)
+	GCL_WNDPROC       = (-24)
+	GCL_STYLE         = (-26)
+	GCW_ATOM          = (-32)
+
+	GCL_HICONSM = (-34)
+)
+
+const (
+	// SetWindowPos Flags
+
+	SWP_NOSIZE         = 1
+	SWP_NOMOVE         = 2
+	SWP_NOZORDER       = 4
+	SWP_NOREDRAW       = 8
+	SWP_NOACTIVATE     = 0x10
+	SWP_FRAMECHANGED   = 0x20 // The frame changed: send WM_NCCALCSIZE
+	SWP_SHOWWINDOW     = 0x40
+	SWP_HIDEWINDOW     = 0x80
+	SWP_NOCOPYBITS     = 0x100
+	SWP_NOOWNERZORDER  = 0x200 // Don't do owner Z ordering
+	SWP_NOSENDCHANGING = 0x400 // Don't send WM_WINDOWPOSCHANGING
+	SWP_DRAWFRAME      = SWP_FRAMECHANGED
+	SWP_NOREPOSITION   = SWP_NOOWNERZORDER
+	SWP_DEFERERASE     = 0x2000
+	SWP_ASYNCWINDOWPOS = 0x4000
+
+	HWND_TOP       = 0
+	HWND_BOTTOM    = 1
+	HWND_TOPMOST   = ^(-1) // -1
+	HWND_NOTOPMOST = ^(-2) // -2
+)
+
 // Window message constants
 const (
 	WM_APP                    = 32768
