@@ -108,16 +108,80 @@ var (
 
 	procGetWindowThreadProcessId = moduser32.NewProc("GetWindowThreadProcessId")
 
-	procRegisterHotKey = moduser32.NewProc("RegisterHotKey")
+	procRegisterHotKey   = moduser32.NewProc("RegisterHotKey")
+	procUnregisterHotKey = moduser32.NewProc("UnregisterHotKey")
+
+	procGetKeyState = moduser32.NewProc("GetKeyState")
+
+	procSetCursorPos = moduser32.NewProc("SetCursorPos")
+
+	procMouseEvent = moduser32.NewProc("mouse_event")
+	procKeyBDEvent = moduser32.NewProc("keybd_event")
 )
+
+/*
+　　VOID keybd_event(
+
+　　BYTE bVk, // virtual-key code
+
+　　BYTE bScan, // hardware scan code
+
+　　DWORD dwFlags, // flags specifying various function options
+
+　　DWORD dwExtraInfo // additional data associated with keystroke
+
+　　);
+
+*/
+
+func SimulateKeyBDEvent(bVk BYTE, dwFlags DWORD) bool {
+	r, _, _ := procKeyBDEvent.Call(uintptr(bVk), 0, uintptr(dwFlags), 0)
+	return r != 0
+}
+
+// VOID mouse_event(
+//   DWORD     dwFlags,     // motion and click options
+//   DWORD     dx,          // horizontal position or change
+//   DWORD     dy,          // vertical position or change
+//   DWORD     dwData,      // wheel movement
+//   ULONG_PTR dwExtraInfo  // application-defined information
+// );
+
+func SimulateMouseEvent(flags MouseEventFlags, dx, dy INT) bool {
+	r, _, _ := procMouseEvent.Call(uintptr(flags), uintptr(dx), uintptr(dy), 0, 0)
+	return r != 0
+}
+
+func SetCursorPos(x, y INT) bool {
+	r, _, _ := procSetCursorPos.Call(uintptr(x), uintptr(y))
+	return r != 0
+}
+
+func GetKeyState(nVirtKey INT) (state SHORT) {
+	r, _, _ := procGetKeyState.Call(uintptr(nVirtKey))
+	state = SHORT(r)
+	return
+}
 
 //__in_opt HWND hWnd,
 //__in int id,
 //__in UINT fsModifiers,
 //__in UINT vk
 
-func RegisterHotKey(hwnd HWND, id int, fsModifiers UINT, vk UINT) (err error) {
+func RegisterHotKey(hwnd HWND, id INT, fsModifiers UINT, vk UINT) (err error) {
 	r, _, e1 := procRegisterHotKey.Call(uintptr(hwnd), uintptr(id), uintptr(fsModifiers), uintptr(vk))
+	if r == 0 {
+		if e1 == nil {
+			err = syscall.EINVAL
+		} else {
+			err = error(e1)
+		}
+	}
+	return
+}
+
+func UnregisterHotKey(hwnd HWND, id INT) (err error) {
+	r, _, e1 := procUnregisterHotKey.Call(uintptr(hwnd), uintptr(id))
 	if r == 0 {
 		if e1 == nil {
 			err = syscall.EINVAL
@@ -390,7 +454,7 @@ func KillTimer(hWnd uintptr, nIDEvent TimerEventID) bool {
 }
 
 //idAttach As Long, ByVal idAttachTo As Long, ByVal fAttach
-func AttachThreadInput(idAttach uintptr, idAttachTo uintptr, fAttach bool) bool {
+func AttachThreadInput(idAttach uintptr, idAttachTo uintptr, fAttach bool) (bool, error) {
 	var fAttach_ uintptr = 0
 	if fAttach {
 		fAttach_ = 1
@@ -401,7 +465,7 @@ func AttachThreadInput(idAttach uintptr, idAttachTo uintptr, fAttach bool) bool 
 		log.Println("AttachThreadInput.err:", err)
 	}
 
-	return r0 != 0
+	return r0 != 0, err
 }
 
 func SetActiveWindow(hWnd HWND) bool {

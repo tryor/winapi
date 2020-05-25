@@ -700,6 +700,9 @@ var (
 	IDI_INFORMATION = IDI_ASTERISK
 )
 
+const KEYEVENTF_EXTENDEDKEY = 0x0001
+const KEYEVENTF_KEYUP = 0x0002
+
 func LOWORD(l INT) INT {
 	return INT(l & 0xffff)
 }

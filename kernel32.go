@@ -20,9 +20,38 @@ var (
 
 	procCreateThread = modkernel32.NewProc("CreateThread")
 
+	procOpenProcess = modkernel32.NewProc("OpenProcess")
+	procCloseHandle = modkernel32.NewProc("CloseHandle")
+	//procGetModuleFileNameExW = modkernel32.NewProc("K32GetModuleFileNameExW")
+
 	//procSetUnhandledExceptionFilter = modkernel32.NewProc("SetUnhandledExceptionFilter")
 
 )
+
+const (
+	SYNCHRONIZE              = 0x00100000
+	STANDARD_RIGHTS_REQUIRED = 0x000F0000
+	PROCESS_ALL_ACCESS       = (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0xFFFF)
+)
+
+//OpenProcess(PROCESS_ALL_ACCESS, False, PID);//打开进程
+func OpenProcess(pid uintptr) (h HANDLE, err error) {
+	r0, e1 := Syscall(procOpenProcess.Addr(), uintptr(PROCESS_ALL_ACCESS), BoolToPtr(false), pid)
+	if r0 == 0 {
+		err = error(e1)
+	} else {
+		h = HANDLE(r0)
+	}
+	return
+}
+
+func CloseHandle(h HANDLE) (err error) {
+	r0, e1 := Syscall(procCloseHandle.Addr(), uintptr(h))
+	if r0 == 0 {
+		err = error(e1)
+	}
+	return
+}
 
 /*
 HANDLE

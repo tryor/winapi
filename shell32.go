@@ -1,10 +1,7 @@
 package winapi
 
 import (
-	//	"errors"
 	"syscall"
-
-	//	"unicode/utf16"
 	"unsafe"
 )
 
@@ -12,6 +9,7 @@ var (
 	modshell32 = syscall.NewLazyDLL("SHELL32.dll")
 
 	procShell_NotifyIconW = modshell32.NewProc("Shell_NotifyIconW")
+	procDllGetVersion     = modshell32.NewProc("DllGetVersion")
 )
 
 const (
@@ -89,4 +87,40 @@ func Shell_NotifyIconW(dwMessage uint32, lpData *NOTIFYICONDATA) (ret bool, err 
 	}
 	ret = r != 0
 	return
+}
+
+type DLLVERSIONINFO struct {
+	CbSize         DWORD
+	DwMajorVersion DWORD
+	DwMinorVersion DWORD
+	DwBuildNumber  DWORD
+	DwPlatformID   DWORD
+}
+
+type DLLVERSIONINFO2 struct {
+	DLLVERSIONINFO
+	DwFlags    DWORD
+	UllVersion DWORD64
+}
+
+func DllGetVersion(pdvi *DLLVERSIONINFO2) (ret bool, err error) {
+	pdvi.CbSize = DWORD(unsafe.Sizeof(*pdvi))
+	r, e1 := Syscall(procDllGetVersion.Addr(), uintptr(unsafe.Pointer(pdvi)))
+	if e1 != nil {
+		err = e1
+	}
+	ret = r != 0
+	return
+}
+
+func MAKEDLLVERULL(major, minor, build, sp DWORD) DWORD64 {
+	return (((DWORD64)(major) << 48) |
+		((DWORD64)(minor) << 32) |
+		((DWORD64)(build) << 16) |
+		((DWORD64)(sp) << 0))
+
+}
+
+func PACKVERSION(a, b DWORD) DWORD {
+	return DWORD(WORD(a&0xffff)) | DWORD(WORD((b&0xffff)<<16))
 }

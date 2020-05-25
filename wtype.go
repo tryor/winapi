@@ -327,3 +327,27 @@ const (
 	LR_COPYFROMRESOURCE = 0x00004000
 	LR_SHARED           = 0x00008000
 )
+
+type MouseEventFlags INT
+
+const (
+	MOUSEEVENTF_MOVE       MouseEventFlags = 0x0001 /* mouse move */
+	MOUSEEVENTF_LEFTDOWN                   = 0x0002 /* left button down */
+	MOUSEEVENTF_LEFTUP                     = 0x0004 /* left button up */
+	MOUSEEVENTF_RIGHTDOWN                  = 0x0008 /* right button down */
+	MOUSEEVENTF_RIGHTUP                    = 0x0010 /* right button up */
+	MOUSEEVENTF_MIDDLEDOWN                 = 0x0020 /* middle button down */
+	MOUSEEVENTF_MIDDLEUP                   = 0x0040 /* middle button up */
+	MOUSEEVENTF_XDOWN                      = 0x0080 /* x button down */
+	MOUSEEVENTF_XUP                        = 0x0100 /* x button down */
+	MOUSEEVENTF_WHEEL                      = 0x0800 /* wheel button rolled */
+	//#if (_WIN32_WINNT >= 0x0600)
+	MOUSEEVENTF_HWHEEL = 0x01000 /* hwheel button rolled */
+	//#endif
+	//#if(WINVER >= 0x0600)
+	MOUSEEVENTF_MOVE_NOCOALESCE = 0x2000 /* do not coalesce mouse moves */
+	//#endif /* WINVER >= 0x0600 */
+	MOUSEEVENTF_VIRTUALDESK = 0x4000 /* map to entire virtual desktop */
+	MOUSEEVENTF_ABSOLUTE    = 0x8000 /* absolute move */
+
+)
